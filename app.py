@@ -38,4 +38,4 @@ inputs = gr.inputs.Image(type="filepath", label="Upload your picture here.")
 outputs = gr.outputs.Image(type="numpy", label="Prediction will appear here")
 
 app = gr.Interface(fn=predict, inputs=inputs, outputs=outputs, title="Satellite Images Segmentation App")
-app.launch()
+app.launch(share=True)
