@@ -1,13 +1,17 @@
 import torch
+import argparse
 import numpy as np
 import gradio as gr
 from PIL import Image
 import albumentations as A
 from model import UNet
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--model_path", default=None, help="Path to saved model.")
+args = parser.parse_args()
+
 model = UNet(3, 1)
-model_path = 'models/experiment_v2.pth'
-state_dict = torch.load(model_path)
+state_dict = torch.load(args.model_path)
 model.load_state_dict(state_dict)
 
 def predict(image_path):

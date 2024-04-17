@@ -155,7 +155,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_epochs", type=int, default=1, help="Number of epochs to train for.")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size of the dataset to train.")
     parser.add_argument("--num_workers", type=int, default=1, help="Number of workers to use for training.")
-    parser.add_argument("--model_path", default=None, help="Path to save madel to.")
+    parser.add_argument("--model_path", default=None, help="Path to save model to.")
     args = parser.parse_args()
 
     train_loop(
