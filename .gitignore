@@ -2,4 +2,5 @@ mlruns/
 models/
 telegram/
 dataset/
-torch_to_onxx.py
+onnx*
+__pycache__

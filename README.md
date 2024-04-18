@@ -1,3 +1,9 @@
+## Scaling-ML
+
+In this project, the primary objective was to develop an AI model capable of accurately segmenting water bodies from satellite images.
+
+### How to Train
+
 1. Clone this repository:
     
     `git clone https://github.com/transiteration/unet-water-segmentation.git` 
