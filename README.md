@@ -27,3 +27,7 @@ In this project, the primary objective was to develop an AI model capable of acc
 6. Run `app.py` with path to trained model to inference custom pictures:
     
     `python3 app.py --model_path path/to/saved/model`
+
+#### Report
+
+Read the full [report](https://www.notion.so/thankscarbon/U-Net-Model-for-Water-Segmentation-9bacf3912dc148098f4dd3b3473326d0) here.
