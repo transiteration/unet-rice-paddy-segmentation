@@ -24,6 +24,6 @@ In this project, the primary objective was to develop an AI model capable of acc
     
     `python3 experiment.py --dataset_loc path/to/dataset --num_workers 2 --num_epochs 10 --batch_size 32 --model_path path/to/save/model`
     
-6. Run [app.py](http://app.py) with path to trained model to inference custom pictures:
+6. Run `app.py` with path to trained model to inference custom pictures:
     
     `python3 app.py --model_path path/to/saved/model`
