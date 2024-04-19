@@ -70,7 +70,7 @@ def train_loop(dataset_loc: str = None,
 
     val_images = Path(dataset_loc, "val/images")
     val_masks = Path(dataset_loc, "val/masks")
-    list_of_val_images = os.listdir(train_images)
+    list_of_val_images = os.listdir(val_images)
     # train_images = os.listdir(images)
 
     # train_images, val_images = train_test_split(list_of_images, test_size=0.1, random_state=SEED)
