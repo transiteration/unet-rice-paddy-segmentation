@@ -64,12 +64,16 @@ def train_loop(dataset_loc: str = None,
                model_path: str = None) -> None:
 
 
-    images = Path(dataset_loc, "images")
-    masks = Path(dataset_loc, "masks")
+    train_images = Path(dataset_loc, "train/images")
+    train_masks = Path(dataset_loc, "train/masks")
+    list_of_train_images = os.listdir(train_images)
 
-    list_of_images = os.listdir(images)
+    val_images = Path(dataset_loc, "val/images")
+    val_masks = Path(dataset_loc, "val/masks")
+    list_of_val_images = os.listdir(train_images)
+    # train_images = os.listdir(images)
 
-    train_images, val_images = train_test_split(list_of_images, test_size=0.1, random_state=SEED)
+    # train_images, val_images = train_test_split(list_of_images, test_size=0.1, random_state=SEED)
 
     train_transform = A.Compose([A.Resize(256, 256), 
                              A.HorizontalFlip(p=0.5), 
@@ -78,14 +82,14 @@ def train_loop(dataset_loc: str = None,
 
     val_transform = A.Compose([A.Resize(256, 256)])
 
-    train_dataset = Dataset(images=train_images,
-                            image_folder=images,
-                            mask_folder=masks,
+    train_dataset = Dataset(images=list_of_train_images,
+                            image_folder=train_images,
+                            mask_folder=train_masks,
                             transform=train_transform)
 
-    val_dataset = Dataset(images=val_images,
-                          image_folder=images,
-                          mask_folder=masks,
+    val_dataset = Dataset(images=list_of_val_images,
+                          image_folder=val_images,
+                          mask_folder=val_masks,
                           transform=val_transform)
     
     train_dataloader = torch.utils.data.DataLoader(train_dataset,
