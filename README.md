@@ -1,4 +1,4 @@
-## Scaling-ML
+## U-Net for Water Segmentation
 
 In this project, the primary objective was to develop an AI model capable of accurately segmenting water bodies from satellite images.
 
