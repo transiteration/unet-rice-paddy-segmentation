@@ -18,7 +18,7 @@ In this project, the primary objective was to develop an AI model capable of acc
     
 4. Download and extract dataset from:
     
-    https://drive.google.com/file/d/1ycnrrZOhYckGJgGeXSJvOI5s77PRcU5g/view?usp=drive_link
+    [Google Drive Dataset Link](https://drive.google.com/file/d/1ycnrrZOhYckGJgGeXSJvOI5s77PRcU5g/view?usp=drive_link)
     
 5. Run `experiment.py` with training parameter arguments, for example:
     
