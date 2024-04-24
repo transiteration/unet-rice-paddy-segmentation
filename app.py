@@ -4,7 +4,7 @@ import onnxruntime
 import gradio as gr
 from PIL import Image
 
-def predict(image_path):
+def predict(image_path: str = None) -> np.ndarray[float]:
     image = Image.open(image_path).convert("L")
     image = np.array(image, dtype=np.float32) / 255.0
     image = np.expand_dims(np.expand_dims(image, axis=0), axis=0)
