@@ -98,7 +98,7 @@ def train_loop(dataset_loc: str = None,
                                                 num_workers=num_workers, 
                                                 shuffle=True)
     
-    model = UNet(3, 1)
+    model = UNet(1, 1)
     loss_fn = DICE_BCE_Loss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     scheduler = ReduceLROnPlateau(optimizer, 'min', patience=5)

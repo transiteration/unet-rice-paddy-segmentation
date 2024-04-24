@@ -22,15 +22,19 @@ In this project, the primary objective was to develop an AI model capable of acc
     
 5. Run `experiment.py` with training parameter arguments, for example:
     
-    `python3 experiment.py --dataset_loc path/to/dataset --num_workers 2 --num_epochs 10 --batch_size 32 --model_path path/to/save/model`
+    `python3 experiment.py --dataset_loc path/to/dataset --num_workers 2 --num_epochs 10 --batch_size 32 --model_path path/to/save/model.pth`
     
 6. Run `evaluate.py` on test set to evaluate model's performance, for example:
 
-    `python3 evaluate.py --dataset_loc path/to/dataset --model_path path/to/save/model --num_workers 2 --batch_size 32`
+    `python3 evaluate.py --dataset_loc path/to/dataset --model_path path/to/saved/model.pth --num_workers 2 --batch_size 32`
 
-7. Run `app.py` with path to trained model to inference custom pictures, for example:
+7. Run `onnx_convert.py` to convert PyTorch model to ONNX runtime model, for example:
+
+    `python3 onnx_convert.py --model_path path/to/saved/model.pth --onnx_path path/to/save/model.onnx`
+
+7. Run `app.py` with path to ONNX model to inference custom pictures using gradio, for example:
     
-    `python3 app.py --model_path path/to/saved/model`
+    `python3 app.py --onnx_path path/to/saved/model.onnx`
 
 #### Report
 

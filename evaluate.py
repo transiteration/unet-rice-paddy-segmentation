@@ -32,14 +32,15 @@ def eval_on_test_set(dataset_loc: str = None,
                                             shuffle=True)
 
 
-    model = UNet(3, 1)
+    model = UNet(1, 1)
     state_dict = torch.load(model_path)
     model.load_state_dict(state_dict)
     model.to(device)
+    model.eval()
 
     total_dice_coeff = 0.0
     num_batches = 0
-
+    
     with torch.inference_mode():
         for images, masks in test_dataloader:
             images = images.to(device)

@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 
 class DICE_BCE_Loss(nn.Module):
@@ -15,7 +16,8 @@ class DICE_BCE_Loss(nn.Module):
 
         return dice_loss + bce_loss
 
-def dice_coeff(logits, targets):
+def dice_coeff(logits: torch.Tensor, 
+               targets: torch.Tensor) -> float:
     intersection = 2*(logits * targets).sum()
     union = (logits + targets).sum()
     if union == 0:
