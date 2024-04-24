@@ -2,7 +2,7 @@
 
 In this project, the primary objective was to develop an AI model capable of accurately segmenting water bodies from satellite images.
 
-### How to Train
+### How to Train, Evaluate and Inference
 
 1. Clone this repository:
     
