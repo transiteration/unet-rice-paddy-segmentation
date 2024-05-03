@@ -40,6 +40,6 @@ In this project, the primary objective was to develop an AI model capable of acc
     
     `python3 app.py --onnx_path path/to/saved/model.onnx`
 
-#### Report
+### Explanation in Details in Notion Report
 
 Read the full [notion report](https://www.notion.so/thankscarbon/U-Net-Model-for-Water-Segmentation-9bacf3912dc148098f4dd3b3473326d0) here.
