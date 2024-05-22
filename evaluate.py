@@ -1,9 +1,11 @@
 import os
 import argparse
-from pathlib import Path
 import albumentations as A
 
 import torch
+from torch.utils.data import DataLoader
+import segmentation_models_pytorch as smp
+
 from model import UNet
 from data import Dataset
 from utils import dice_coeff
@@ -15,24 +17,29 @@ def eval_on_test_set(dataset_loc: str = None,
                      batch_size: int = 32,
                      num_workers: int = 1) -> None:
     
-    test_images = Path(dataset_loc, "test/images")
-    test_masks = Path(dataset_loc, "test/masks")
+    test_images = os.path.join(dataset_loc, "images/test")
+    test_masks = os.path.join(dataset_loc, "masks/test")
     list_of_test_images = os.listdir(test_images)
     
     test_transform = A.Compose([A.Resize(256, 256)])
 
     train_dataset = Dataset(images=list_of_test_images,
-                        image_folder=test_images,
-                        mask_folder=test_masks,
-                        transform=test_transform)
+                            image_folder=test_images,
+                            mask_folder=test_masks,
+                            transform=test_transform)
 
-    test_dataloader = torch.utils.data.DataLoader(train_dataset,
-                                            batch_size=batch_size,
-                                            num_workers=num_workers,
-                                            shuffle=True)
+    test_dataloader = DataLoader(train_dataset,
+                                 batch_size=batch_size,
+                                 num_workers=num_workers,
+                                 shuffle=False)
 
 
-    model = UNet(1, 1)
+    model = smp.DeepLabV3Plus(
+    encoder_name="resnet34",
+    encoder_weights="imagenet",
+    in_channels=3,
+    classes=1)
+    
     state_dict = torch.load(model_path)
     model.load_state_dict(state_dict)
     model.to(device)
@@ -55,10 +62,10 @@ def eval_on_test_set(dataset_loc: str = None,
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset_loc", type=str, default=None, help="Path to the dataset to train.")
-    parser.add_argument("--model_path", default=None, help="Path to saved model to evaluate.")
-    parser.add_argument("--batch_size", type=int, default=32, help="Batch size of the dataset to train.")
-    parser.add_argument("--num_workers", type=int, default=1, help="Number of workers to use for training.")
+    parser.add_argument("-d", "--dataset_loc", type=str, default=None, help="Path to the dataset to train.")
+    parser.add_argument("-m", "--model_path", default=None, help="Path to saved model to evaluate.")
+    parser.add_argument("-b", "--batch_size", type=int, default=32, help="Batch size of the dataset to train.")
+    parser.add_argument("-w", "--num_workers", type=int, default=1, help="Number of workers to use for training.")
     args = parser.parse_args()
 
     eval_on_test_set(

@@ -3,16 +3,17 @@ import mlflow
 import argparse
 from tqdm import tqdm
 from art import tprint
-from pathlib import Path
+from typing import Tuple
 import albumentations as A
 
 import torch
 from torch import nn
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.utils.data import DataLoader
+import segmentation_models_pytorch as smp
 
 from model import UNet
 from data import Dataset
-from utils import DICE_BCE_Loss, dice_coeff
+from utils import DICE_BCE_Loss, dice_coeff, iou_coeff, set_seed
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 SEED = 42
@@ -21,10 +22,11 @@ def train_step(model: nn.Module,
                dataloader: torch.utils.data.DataLoader,
                optimizer: torch.optim.Optimizer,
                loss_fn: DICE_BCE_Loss,
-               device: torch.device) -> float:
+               device: torch.device) -> Tuple[float, float]:
     model.train()
     loss = 0.0
     dice = 0.0
+    iou = 0.0
     for i, (images, masks) in enumerate(dataloader):
         images, masks = images.to(device), masks.to(device)
         optimizer.zero_grad()
@@ -33,28 +35,33 @@ def train_step(model: nn.Module,
         J.backward()
         optimizer.step()
         loss += J.item()
-        dice += dice_coeff(z, masks)
+        dice += dice_coeff(z, masks).item()
+        iou += iou_coeff(z, masks).item()
     loss = loss / len(dataloader)
     dice = dice / len(dataloader)
-    return loss, dice
+    iou = iou / len(dataloader)
+    return loss, dice, iou
 
 def eval_step(model: nn.Module,
               dataloader: torch.utils.data.DataLoader, 
               loss_fn: DICE_BCE_Loss,
-              device: torch.device) -> float:
+              device: torch.device) -> Tuple[float, float]:
     model.eval()
     loss = 0.0
     dice = 0.0
+    iou = 0.0
     with torch.inference_mode():
         for i, (images, masks) in enumerate(dataloader):
             images, masks = images.to(device), masks.to(device)
             z = model(images)
             J = loss_fn(z, masks)
             loss += J.item()
-            dice += dice_coeff(z, masks)
+            dice += dice_coeff(z, masks).item()
+            iou += iou_coeff(z, masks).item()
     loss = loss / len(dataloader)
     dice = dice / len(dataloader)
-    return loss, dice
+    iou = iou / len(dataloader)
+    return loss, dice, iou
 
 def train_loop(dataset_loc: str = None,
                num_epochs: int = 1,
@@ -62,21 +69,26 @@ def train_loop(dataset_loc: str = None,
                num_workers: int = 1,
                model_path: str = None) -> None:
 
+    set_seed(seed=SEED)
 
-    train_images = Path(dataset_loc, "train/images")
-    train_masks = Path(dataset_loc, "train/masks")
+    train_images = os.path.join(dataset_loc, "images/train")
+    train_masks = os.path.join(dataset_loc, "masks/train")
     list_of_train_images = os.listdir(train_images)
 
-    val_images = Path(dataset_loc, "val/images")
-    val_masks = Path(dataset_loc, "val/masks")
+    val_images = os.path.join(dataset_loc, "images/val")
+    val_masks = os.path.join(dataset_loc, "masks/val")
     list_of_val_images = os.listdir(val_images)
 
-    train_transform = A.Compose([A.Resize(256, 256), 
-                             A.HorizontalFlip(p=0.5), 
-                             A.VerticalFlip(p=0.5), 
-                             A.RandomRotate90(p=0.5)])
+    train_transform = A.Compose([
+        A.Resize(256, 256),
+        A.HorizontalFlip(p=0.3),
+        A.VerticalFlip(p=0.3),
+        A.RandomRotate90(p=0.3),
+    ])
 
-    val_transform = A.Compose([A.Resize(256, 256)])
+    val_transform = A.Compose([
+        A.Resize(256, 256),
+    ])
 
     train_dataset = Dataset(images=list_of_train_images,
                             image_folder=train_images,
@@ -88,49 +100,61 @@ def train_loop(dataset_loc: str = None,
                           mask_folder=val_masks,
                           transform=val_transform)
     
-    train_dataloader = torch.utils.data.DataLoader(train_dataset,
-                                               batch_size=batch_size,
-                                               num_workers=num_workers,
-                                               shuffle=True)
+    train_dataloader = DataLoader(train_dataset,
+                                  batch_size=batch_size,
+                                  num_workers=num_workers,
+                                  shuffle=True)
 
-    val_dataloader = torch.utils.data.DataLoader(val_dataset,
-                                                batch_size=batch_size,
-                                                num_workers=num_workers, 
-                                                shuffle=True)
+    val_dataloader = DataLoader(val_dataset,
+                                batch_size=batch_size,
+                                num_workers=num_workers, 
+                                shuffle=False)
     
-    model = UNet(1, 1)
-    loss_fn = DICE_BCE_Loss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-    scheduler = ReduceLROnPlateau(optimizer, 'min', patience=5)
+    model = smp.UnetPlusPlus(
+    encoder_name="resnet50",
+    encoder_weights="imagenet",
+    in_channels=3,
+    classes=1)
+
+    loss_fn = torch.nn.BCEWithLogitsLoss()
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
     model.to(device)
 
     best_val_loss = float('inf')
     best_model_state_dict = None
-    with mlflow.start_run() as run:
-        for epoch in tqdm(range(num_epochs)):
-            train_loss, train_dice = train_step(model=model, 
-                                    dataloader=train_dataloader,
-                                    optimizer=optimizer,
-                                    loss_fn=loss_fn,
-                                    device=device)
 
-            val_loss, val_dice = eval_step(model=model, 
-                                dataloader=val_dataloader,
-                                loss_fn=loss_fn,
-                                device=device)    
+    run_name = f"{os.path.splitext(os.path.basename(model_path))[0]}_{num_epochs}_epochs"
+    with mlflow.start_run(run_name=run_name):
+        for epoch in tqdm(range(num_epochs)):
+            train_loss, train_dice, train_iou = train_step(model=model, 
+                                                            dataloader=train_dataloader,
+                                                            optimizer=optimizer,
+                                                            loss_fn=loss_fn,
+                                                            device=device)
+
+            val_loss, val_dice, val_iou = eval_step(model=model, 
+                                                    dataloader=val_dataloader,
+                                                    loss_fn=loss_fn,
+                                                    device=device)    
  
 
             print(
             f"Epoch: {epoch+1} | "
             f"train_loss: {train_loss:.4f} | "
             f"train_dice: {train_dice:.4f} | "
+            f"train_iou: {train_iou:.4f} | "
             f"val_loss: {val_loss:.4f} | "
-            f"val_dice: {val_dice:.4f} | ")
-            
+            f"val_dice: {val_dice:.4f} | "
+            f"val_iou: {val_iou:.4f} | "
+            )
+
             mlflow.log_metric("train_loss", train_loss, step=epoch)
             mlflow.log_metric("train_dice", train_dice, step=epoch)
+            mlflow.log_metric("train_dice", train_iou, step=epoch)
             mlflow.log_metric("val_loss", val_loss, step=epoch)
             mlflow.log_metric("val_dice", val_dice, step=epoch)
+            mlflow.log_metric("val_iou", val_iou, step=epoch)
 
             scheduler.step(val_loss)
 
@@ -151,11 +175,11 @@ def train_loop(dataset_loc: str = None,
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset_loc", type=str, default=None, help="Path to the dataset to train.")
-    parser.add_argument("--num_epochs", type=int, default=1, help="Number of epochs to train for.")
-    parser.add_argument("--batch_size", type=int, default=32, help="Batch size of the dataset to train.")
-    parser.add_argument("--num_workers", type=int, default=1, help="Number of workers to use for training.")
-    parser.add_argument("--model_path", default=None, help="Path to save model to.")
+    parser.add_argument("-d", "--dataset_loc", type=str, default=None, help="Path to the dataset to train.")
+    parser.add_argument("-e", "--num_epochs", type=int, default=1, help="Number of epochs to train for.")
+    parser.add_argument("-b", "--batch_size", type=int, default=32, help="Batch size of the dataset to train.")
+    parser.add_argument("-w", "--num_workers", type=int, default=1, help="Number of workers to use for training.")
+    parser.add_argument("-m", "--model_path", default=None, help="Path to save model to.")
     args = parser.parse_args()
 
     train_loop(

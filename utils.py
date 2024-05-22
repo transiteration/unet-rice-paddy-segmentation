@@ -1,4 +1,6 @@
 import torch
+import random
+import numpy as np
 from torch import nn
 
 class DICE_BCE_Loss(nn.Module):
@@ -16,11 +18,28 @@ class DICE_BCE_Loss(nn.Module):
 
         return dice_loss + bce_loss
 
-def dice_coeff(logits: torch.Tensor, 
-               targets: torch.Tensor) -> float:
-    intersection = 2*(logits * targets).sum()
-    union = (logits + targets).sum()
-    if union == 0:
-        return 1
-    dice_coeff = intersection / union
-    return dice_coeff.item()
+def dice_coeff(pred, target, smooth=1e-6):
+    pred = torch.sigmoid(pred)
+    pred = (pred > 0.5).float()  # Apply threshold
+    pred = pred.view(-1)
+    target = target.view(-1)
+    intersection = (pred * target).sum()
+    return (2. * intersection + smooth) / (pred.sum() + target.sum() + smooth)
+
+def iou_coeff(pred, target, smooth=1e-6):
+    pred = torch.sigmoid(pred)
+    pred = (pred > 0.5).float()  # Apply threshold
+    pred = pred.view(-1)
+    target = target.view(-1)
+    intersection = (pred * target).sum()
+    union = pred.sum() + target.sum() - intersection
+    return (intersection + smooth) / (union + smooth)
+
+def set_seed(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False

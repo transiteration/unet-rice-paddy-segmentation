@@ -14,10 +14,13 @@ class Dataset(torch.utils.data.Dataset):
         return len(self.images)
 
     def __getitem__(self, idx):
-        image_path = os.path.join(self.image_folder, self.images[idx])
-        mask_path = os.path.join(self.mask_folder, self.images[idx])
+        image_name = self.images[idx]
+        image_path = os.path.join(self.image_folder, image_name)
         
-        image = Image.open(image_path).convert("L")
+        mask_name = os.path.splitext(image_name)[0] + '.png'
+        mask_path = os.path.join(self.mask_folder, mask_name)
+        
+        image = Image.open(image_path).convert("RGB")
         mask = Image.open(mask_path).convert("L")
         
         image = np.array(image, dtype=np.float32) / 255.0
@@ -27,4 +30,4 @@ class Dataset(torch.utils.data.Dataset):
             augmented = self.transform(image=image, mask=mask)
             image = augmented['image']
             mask = augmented['mask']
-        return torch.from_numpy(image).unsqueeze(0), torch.from_numpy(mask).unsqueeze(0)
+        return torch.from_numpy(image).permute(2, 0, 1), torch.from_numpy(mask).unsqueeze(0)
