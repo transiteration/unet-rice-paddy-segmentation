@@ -1,6 +1,6 @@
 mlruns/
-*.pth
-*.ipynb
-telegram/
 dataset/
 __pycache__
+*.pth
+*.ipynb
+*.onnx

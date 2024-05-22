@@ -8,8 +8,8 @@ import segmentation_models_pytorch as smp
 
 def pth_to_onnx(model_path: str = None, onnx_path: str = None) -> None:
     
-    model = smp.DeepLabV3Plus(
-    encoder_name="resnet34",
+    model = smp.UnetPlusPlus(
+    encoder_name="resnet50",
     encoder_weights="imagenet",
     in_channels=3,
     classes=1)
