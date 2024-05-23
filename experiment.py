@@ -162,7 +162,6 @@ def train_loop(dataset_loc: str = None,
             print(f"Best validation loss: {best_val_loss:.4f}")
         print("DONE")
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--dataset_loc", type=str, default=None, help="Path to the dataset to train.")
