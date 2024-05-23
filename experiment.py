@@ -26,7 +26,6 @@ def train_step(model: nn.Module,
     model.train()
     loss = 0.0
     dice = 0.0
-    iou = 0.0
     for i, (images, masks) in enumerate(dataloader):
         images, masks = images.to(device), masks.to(device)
         optimizer.zero_grad()
@@ -38,7 +37,6 @@ def train_step(model: nn.Module,
         dice += dice_coeff(z, masks).item()
     loss = loss / len(dataloader)
     dice = dice / len(dataloader)
-    iou = iou / len(dataloader)
     return loss, dice
 
 def eval_step(model: nn.Module,
@@ -48,7 +46,6 @@ def eval_step(model: nn.Module,
     model.eval()
     loss = 0.0
     dice = 0.0
-    iou = 0.0
     with torch.inference_mode():
         for i, (images, masks) in enumerate(dataloader):
             images, masks = images.to(device), masks.to(device)
