@@ -160,7 +160,7 @@ def train_loop(dataset_loc: str = None,
             else:
                 torch.save(best_model_state_dict, model_path + ".pth")
             print(f"Best validation loss: {best_val_loss:.4f}")
-        print("DONE")
+        tprint("DONE")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
