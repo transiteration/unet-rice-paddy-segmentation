@@ -8,7 +8,7 @@ import segmentation_models_pytorch as smp
 
 def pth_to_onnx(model_path: str = None, onnx_path: str = None) -> None:
     
-    model = smp.UnetPlusPlus(
+    model = smp.Unet(
     encoder_name="resnet50",
     encoder_weights="imagenet",
     in_channels=3,
