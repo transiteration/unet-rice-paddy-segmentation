@@ -1,6 +1,6 @@
 ## U-Net for Water Segmentation
 
-In this project, the primary objective was to develop an AI model capable of accurately segmenting water bodies from satellite images.
+In this project, the primary objective was to develop an AI model capable of segmenting rice paddies from Sentinel-2 satellite images.
 
 ### How to Train, Evaluate and Inference
 

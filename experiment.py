@@ -11,7 +11,6 @@ from torch import nn
 from torch.utils.data import DataLoader
 import segmentation_models_pytorch as smp
 
-from model import UNet
 from data import Dataset
 from utils import DICE_BCE_Loss, dice_coeff, set_seed
 
@@ -77,7 +76,7 @@ def train_loop(dataset_loc: str = None,
         A.Resize(256, 256),
         A.HorizontalFlip(p=0.3),
         A.VerticalFlip(p=0.3),
-        A.RandomRotate90(p=0.3),
+        A.RandomRotate90(p=0.3)
     ])
 
     val_transform = A.Compose([
@@ -104,15 +103,17 @@ def train_loop(dataset_loc: str = None,
                                 num_workers=num_workers, 
                                 shuffle=False)
     
-    model = smp.Unet(
-    encoder_name="resnet50",
+    model = smp.UnetPlusPlus(
+    encoder_name="efficientnet-b4",
     encoder_weights="imagenet",
     in_channels=3,
-    classes=1)
+    classes=1,
+    )
 
     loss_fn = torch.nn.BCEWithLogitsLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=50)
     model.to(device)
 
     run_name = f"{os.path.splitext(os.path.basename(model_path))[0]}_{num_epochs}_epochs"
@@ -143,7 +144,7 @@ def train_loop(dataset_loc: str = None,
             mlflow.log_metric("val_loss", val_loss, step=epoch)
             mlflow.log_metric("val_dice", val_dice, step=epoch)
 
-            scheduler.step(val_loss)
+            scheduler.step()
 
             artifact_uri = mlflow.get_artifact_uri()
             artifact_uri = artifact_uri.split("file://")[-1]

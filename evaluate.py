@@ -34,8 +34,8 @@ def eval_on_test_set(dataset_loc: str = None,
                                  shuffle=False)
 
 
-    model = smp.Unet(
-    encoder_name="resnet50",
+    model = smp.UnetPlusPlus(
+    encoder_name="efficientnet-b4",
     encoder_weights="imagenet",
     in_channels=3,
     classes=1)
