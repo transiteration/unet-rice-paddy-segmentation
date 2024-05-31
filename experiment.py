@@ -83,12 +83,10 @@ def train_loop(dataset_loc: str = None,
         A.HorizontalFlip(p=0.3),
         A.VerticalFlip(p=0.3),
         A.RandomRotate90(p=0.3),
-        A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
     ])
 
     val_transform = A.Compose([
         A.Resize(512, 512),
-        A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
     ])
 
     train_dataset = Dataset(images=list_of_train_images,
