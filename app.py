@@ -9,7 +9,7 @@ def predict(image_path: str = None) -> Image.Image:
     start_time = time.time()
     image = Image.open(image_path).convert("RGB")
     original_size = image.size
-    image = image.resize((256, 256))
+    image = image.resize((512, 512))
     image = np.array(image, dtype=np.float32) / 255.0
     image = image.transpose(2, 0, 1)
     image = np.expand_dims(image, axis=0)

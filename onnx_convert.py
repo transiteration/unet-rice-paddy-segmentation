@@ -16,9 +16,7 @@ def pth_to_onnx(model_path: str = None, onnx_path: str = None) -> None:
     state_dict = torch.load(model_path)
     model.load_state_dict(state_dict)
     model.eval()
-    dummy_input = torch.randn(1, 3, 256, 256)
-    torch_out = model(dummy_input)
-
+    dummy_input = torch.randn(1, 3, 512, 512)
     torch.onnx.export(model,
                       dummy_input,
                       onnx_path,

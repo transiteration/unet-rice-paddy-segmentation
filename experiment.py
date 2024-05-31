@@ -73,14 +73,16 @@ def train_loop(dataset_loc: str = None,
     list_of_val_images = os.listdir(val_images)
 
     train_transform = A.Compose([
-        A.Resize(256, 256),
+        A.Resize(512, 512),
         A.HorizontalFlip(p=0.3),
         A.VerticalFlip(p=0.3),
-        A.RandomRotate90(p=0.3)
+        A.RandomRotate90(p=0.3),
+        A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
     ])
 
     val_transform = A.Compose([
-        A.Resize(256, 256),
+        A.Resize(512, 512),
+        A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
     ])
 
     train_dataset = Dataset(images=list_of_train_images,
@@ -112,8 +114,7 @@ def train_loop(dataset_loc: str = None,
 
     loss_fn = torch.nn.BCEWithLogitsLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
-    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=50)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
     model.to(device)
 
     run_name = f"{os.path.splitext(os.path.basename(model_path))[0]}_{num_epochs}_epochs"
@@ -144,7 +145,7 @@ def train_loop(dataset_loc: str = None,
             mlflow.log_metric("val_loss", val_loss, step=epoch)
             mlflow.log_metric("val_dice", val_dice, step=epoch)
 
-            scheduler.step()
+            scheduler.step(val_loss)
 
             artifact_uri = mlflow.get_artifact_uri()
             artifact_uri = artifact_uri.split("file://")[-1]
