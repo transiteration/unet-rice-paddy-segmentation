@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 import segmentation_models_pytorch as smp
 
 from data import Dataset
-from utils import DICE_BCE_Loss, dice_coeff, set_seed
+from utils import DICE_BCE_Loss, dice_coeff, iou_coeff, set_seed
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 SEED = 42
@@ -25,6 +25,7 @@ def train_step(model: nn.Module,
     model.train()
     loss = 0.0
     dice = 0.0
+    iou = 0.0
     for i, (images, masks) in enumerate(dataloader):
         images, masks = images.to(device), masks.to(device)
         optimizer.zero_grad()
@@ -34,9 +35,11 @@ def train_step(model: nn.Module,
         optimizer.step()
         loss += J.item()
         dice += dice_coeff(z, masks).item()
+        iou += iou_coeff(z, masks).item()
     loss = loss / len(dataloader)
     dice = dice / len(dataloader)
-    return loss, dice
+    iou = iou / len(dataloader)
+    return loss, dice, iou
 
 def eval_step(model: nn.Module,
               dataloader: torch.utils.data.DataLoader, 
@@ -45,6 +48,7 @@ def eval_step(model: nn.Module,
     model.eval()
     loss = 0.0
     dice = 0.0
+    iou = 0.0
     with torch.inference_mode():
         for i, (images, masks) in enumerate(dataloader):
             images, masks = images.to(device), masks.to(device)
@@ -52,9 +56,11 @@ def eval_step(model: nn.Module,
             J = loss_fn(z, masks)
             loss += J.item()
             dice += dice_coeff(z, masks).item()
+            iou += iou_coeff(z, masks).item()
     loss = loss / len(dataloader)
     dice = dice / len(dataloader)
-    return loss, dice
+    iou = iou / len(dataloader)
+    return loss, dice, iou
 
 def train_loop(dataset_loc: str = None,
                num_epochs: int = 1,
@@ -122,13 +128,13 @@ def train_loop(dataset_loc: str = None,
         best_val_loss = float('inf')
         best_model_state_dict = None
         for epoch in tqdm(range(num_epochs)):
-            train_loss, train_dice = train_step(model=model, 
+            train_loss, train_dice, train_iou = train_step(model=model, 
                                                 dataloader=train_dataloader,
                                                 optimizer=optimizer,
                                                 loss_fn=loss_fn,
                                                 device=device)
 
-            val_loss, val_dice = eval_step(model=model, 
+            val_loss, val_dice, val_iou = eval_step(model=model, 
                                            dataloader=val_dataloader,
                                            loss_fn=loss_fn,
                                            device=device)    
@@ -136,14 +142,19 @@ def train_loop(dataset_loc: str = None,
                 f"Epoch: {epoch+1} | "
                 f"train_loss: {train_loss:.4f} | "
                 f"train_dice: {train_dice:.4f} | "
+                f"train_iou: {train_iou:.4f} | "
                 f"val_loss: {val_loss:.4f} | "
                 f"val_dice: {val_dice:.4f} | "
+                f"val_iou: {val_iou:.4f} | "
+
             )
 
             mlflow.log_metric("train_loss", train_loss, step=epoch)
             mlflow.log_metric("train_dice", train_dice, step=epoch)
+            mlflow.log_metric("train_iou", train_iou, step=epoch)
             mlflow.log_metric("val_loss", val_loss, step=epoch)
             mlflow.log_metric("val_dice", val_dice, step=epoch)
+            mlflow.log_metric("val_iou", val_iou, step=epoch)
 
             scheduler.step(val_loss)
 
