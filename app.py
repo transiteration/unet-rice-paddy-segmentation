@@ -5,7 +5,7 @@ import onnxruntime
 import gradio as gr
 from PIL import Image
 
-def predict(image_path: str = None) -> Image.Image:
+def predict(image_path: str = None) -> tuple:
     start_time = time.time()
     image = Image.open(image_path).convert("RGB")
     original_size = image.size
@@ -17,13 +17,19 @@ def predict(image_path: str = None) -> Image.Image:
     ort_inputs = {ort_session.get_inputs()[0].name: image}
     output = ort_session.run(None, ort_inputs)[0][0][0]
 
-    output = (output - np.min(output)) / (np.max(output) - np.min(output))
-    output = np.clip(output * 2 - 1, 0, 1) * 255
-    output_image = Image.fromarray(output.astype(np.uint8))
-    output_image = output_image.resize(original_size)
+    min_max_image = (output - np.min(output)) / (np.max(output) - np.min(output))
+    min_max_image = np.clip(min_max_image * 2 - 1, 0, 1) * 255
+    min_max_image = Image.fromarray(min_max_image.astype(np.uint8))
+    min_max_image = min_max_image.resize(original_size)
+
+    binary_image = np.where(output >= 0.5, 1, 0) * 255
+    binary_image = Image.fromarray(binary_image.astype(np.uint8))
+    binary_image = binary_image.resize(original_size)
+
     end_time = time.time()
-    print(f"Processing time: {end_time - start_time:.2f} seconds")
-    return output_image
+    processing_time = f"{end_time - start_time:.2f} seconds"
+    print(processing_time)
+    return processing_time, min_max_image, binary_image 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -32,7 +38,14 @@ if __name__ == "__main__":
 
     ort_session = onnxruntime.InferenceSession(args.onnx_path)
 
-    inputs = gr.inputs.Image(type="filepath", label="Upload your picture here.")
-    outputs = gr.outputs.Image(type="pil", label="Prediction will appear here")
-    app = gr.Interface(fn=predict, inputs=inputs, outputs=outputs, title="Satellite Images Segmentation App")
-    app.launch(share=False)
+    inputs = gr.Image(type="filepath", label="Upload your picture here.")
+    outputs = [gr.Textbox(label="Processing time"),
+               gr.Image(type="pil", label="MinMax Image"),
+               gr.Image(type="pil", label="Binary Image")]
+
+    app = gr.Interface(fn=predict,
+                       inputs=inputs,
+                       outputs=outputs,
+                       allow_flagging="never",
+                       title="Satellite Rice Paddy Images Segmentation App")
+    app.launch(share=True)
