@@ -1,9 +1,5 @@
-import onnx
 import torch
 import argparse
-import onnxruntime
-import numpy as np
-from model import UNet
 import segmentation_models_pytorch as smp
 
 def pth_to_onnx(model_path: str = None, onnx_path: str = None) -> None:

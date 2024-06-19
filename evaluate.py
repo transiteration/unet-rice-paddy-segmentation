@@ -6,7 +6,6 @@ import torch
 from torch.utils.data import DataLoader
 import segmentation_models_pytorch as smp
 
-from model import UNet
 from data import Dataset
 from utils import dice_coeff
 
