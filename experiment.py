@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 import segmentation_models_pytorch as smp
 
 from data import Dataset
-from utils import set_seed
+from utils import set_seed, check_dim
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 SEED = 42
@@ -74,12 +74,22 @@ def train_loop(dataset_loc: str = None,
     set_seed(seed=SEED)
 
     train_images = os.path.join(dataset_loc, "images/train")
+    train_ndvis = os.path.join(dataset_loc, "ndvis/train")
     train_masks = os.path.join(dataset_loc, "masks/train")
     list_of_train_images = os.listdir(train_images)
 
     val_images = os.path.join(dataset_loc, "images/val")
+    val_ndvis = os.path.join(dataset_loc, "ndvis/val")
     val_masks = os.path.join(dataset_loc, "masks/val")
     list_of_val_images = os.listdir(val_images)
+
+    check_dim(ndvi_dir=train_ndvis,
+              image_dir=train_images,
+              mask_dir=train_masks)
+
+    check_dim(ndvi_dir=val_ndvis,
+              image_dir=val_images,
+              mask_dir=val_masks)
 
     train_transform = A.Compose([
         A.Resize(512, 512),
@@ -94,11 +104,13 @@ def train_loop(dataset_loc: str = None,
 
     train_dataset = Dataset(images=list_of_train_images,
                             image_folder=train_images,
+                            ndvi_folder=train_ndvis,
                             mask_folder=train_masks,
                             transform=train_transform)
 
     val_dataset = Dataset(images=list_of_val_images,
                           image_folder=val_images,
+                          ndvi_folder=val_ndvis,
                           mask_folder=val_masks,
                           transform=val_transform)
     
@@ -115,13 +127,12 @@ def train_loop(dataset_loc: str = None,
     model = smp.UnetPlusPlus(
     encoder_name="efficientnet-b4",
     encoder_weights="imagenet",
-    in_channels=3,
+    in_channels=4,
     classes=1,
     )
 
     loss_fn = torch.nn.BCEWithLogitsLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
-    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs)
     model.to(device)
 

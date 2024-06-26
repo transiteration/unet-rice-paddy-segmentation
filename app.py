@@ -48,4 +48,4 @@ if __name__ == "__main__":
                        outputs=outputs,
                        allow_flagging="never",
                        title="Satellite Rice Paddy Images Segmentation App")
-    app.launch(share=True)
+    app.launch(share=False)

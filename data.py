@@ -4,9 +4,10 @@ import numpy as np
 from PIL import Image
 
 class Dataset(torch.utils.data.Dataset):
-    def __init__(self, images, image_folder, mask_folder, transform=None):
+    def __init__(self, images, image_folder, ndvi_folder, mask_folder, transform=None):
         self.images = images
         self.image_folder = image_folder
+        self.ndvi_folder = ndvi_folder
         self.mask_folder = mask_folder
         self.transform = transform
 
@@ -26,8 +27,12 @@ class Dataset(torch.utils.data.Dataset):
         image = np.array(image, dtype=np.float32) / 255.0
         mask = np.array(mask, dtype=np.float32) / 255.0
         
+        ndvi_path = os.path.join(self.ndvi_folder, image_name)
+        ndvi_image = Image.open(ndvi_path)
+        ndvi_image = np.array(ndvi_image, dtype=np.float32)
+        combined_image = np.dstack((image, ndvi_image))
         if self.transform:
-            augmented = self.transform(image=image, mask=mask)
-            image = augmented['image']
+            augmented = self.transform(image=combined_image, mask=mask)
+            combined_image = augmented['image']
             mask = augmented['mask']
-        return torch.from_numpy(image).permute(2, 0, 1), torch.from_numpy(mask).unsqueeze(0)
+        return torch.from_numpy(combined_image).permute(2, 0, 1), torch.from_numpy(mask).unsqueeze(0)

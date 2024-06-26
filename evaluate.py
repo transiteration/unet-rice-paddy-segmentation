@@ -16,11 +16,11 @@ def eval_on_test_set(dataset_loc: str = None,
                      batch_size: int = 32,
                      num_workers: int = 1) -> None:
     
-    test_images = os.path.join(dataset_loc, "images/test")
-    test_masks = os.path.join(dataset_loc, "masks/test")
+    test_images = os.path.join(dataset_loc, "images/val")
+    test_masks = os.path.join(dataset_loc, "masks/val")
     list_of_test_images = os.listdir(test_images)
     
-    test_transform = A.Compose([A.Resize(256, 256)])
+    test_transform = A.Compose([A.Resize(512, 512)])
 
     train_dataset = Dataset(images=list_of_test_images,
                             image_folder=test_images,
@@ -44,7 +44,8 @@ def eval_on_test_set(dataset_loc: str = None,
     model.to(device)
     model.eval()
 
-    total_dice_coeff = 0.0
+    iou = 0.0
+    acc = 0.0
     num_batches = 0
     
     with torch.inference_mode():
@@ -52,12 +53,15 @@ def eval_on_test_set(dataset_loc: str = None,
             images = images.to(device)
             masks = masks.to(device)
             outputs = model(images)
-            batch_dice_coeff = dice_coeff(outputs, masks)
-            total_dice_coeff += batch_dice_coeff
+            masks = masks.to(torch.uint8)
+            tp, fp, fn, tn = smp.metrics.get_stats(outputs, masks, mode='binary', threshold=0.5)
+            iou += smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
+            acc += smp.metrics.accuracy(tp, fp, fn, tn, reduction="micro")
             num_batches += 1
-    avg_dice_coeff = total_dice_coeff / num_batches
-    print(f"Average Dice Coefficient on Test Set: {avg_dice_coeff:.4f}")
-
+    avg_iou = iou / num_batches
+    avg_acc = acc / num_batches
+    print(f"Average IoU Coefficient on Test Set: {avg_iou:.4f}")
+    print(f"Average Accuracy on Test Set: {avg_acc:.4f}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
